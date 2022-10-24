@@ -93,7 +93,7 @@ int main() {
                 break;
             }
             case 4: {
-
+                tree.ls();
                 break;
             }
             case 5: {

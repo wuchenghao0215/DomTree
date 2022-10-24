@@ -21,6 +21,8 @@ public:
 
     std::string get_error_message() const;
 
+    std::string get_real_xpath(std::string &xpath) const;
+
     void print_outer_html(std::string &xpath) const;
 
     void print_text(std::string &xpath) const;

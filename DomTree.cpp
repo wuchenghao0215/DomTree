@@ -149,15 +149,62 @@ string DomTree::get_error_message() const {
     return error_message;
 }
 
+std::string DomTree::get_real_xpath(string &xpath) const {
+    if (xpath[0] == '~') {
+        if (xpath[1] == '/') {
+            xpath.erase(0, 2);
+        } else {
+            cout << "xpath does not exist" << endl;
+            cout << xpath << endl;
+            throw runtime_error("");
+        }
+    } else if (xpath[0] == '.') {
+        if (xpath[1] == '.') {
+            if (xpath[2] == '/') {
+                if (current_xpath.empty()) {
+                    cout << "no superior path" << endl;
+                    throw runtime_error("");
+                }
+                xpath.erase(0, 3);
+                size_t p1 = current_xpath.find_last_of('/');
+                size_t p2 = current_xpath.find_last_of('/', p1 - 1);
+                if (p2 != string::npos) {
+                    xpath = current_xpath.substr(0, p2 + 1) + xpath;
+                }
+            } else {
+                cout << "xpath does not exist" << endl;
+                cout << xpath << endl;
+                throw runtime_error("");
+            }
+        } else if (xpath[1] == '/') {
+            xpath.erase(0, 2);
+            xpath = current_xpath + xpath;
+            if (xpath.empty()) {
+                xpath = "html";
+            }
+        } else {
+            cout << "xpath does not exist" << endl;
+            cout << xpath << endl;
+            throw runtime_error("");
+        }
+    } else {
+        if (xpath[0] == '/') {
+            xpath.erase(0, 1);
+        }
+        xpath = current_xpath + xpath;
+        if (xpath.empty()) {
+            xpath = "html";
+        }
+    }
+
+    return xpath;
+}
+
 void DomTree::print_outer_html(string &xpath) const {
-    if (xpath[0] == '/') {
-        xpath.erase(0, 1);
-    }
-    if (!current_xpath.empty()) {
-        xpath = current_xpath + '/' + xpath;
-    }
-    if (xpath.empty()) {
-        xpath = "html";
+    try {
+        xpath = get_real_xpath(xpath);
+    } catch (runtime_error &) {
+        return;
     }
     regex pattern("/");
     sregex_token_iterator begin(xpath.begin(), xpath.end(), pattern, -1), end;
@@ -180,7 +227,7 @@ void DomTree::print_outer_html(string &xpath) const {
         if (q.empty()) {
             cout << "xpath does not exist" << endl;
             cout << xpath << endl;
-            break;
+            return;
         }
     }
     while (!q.empty()) {
@@ -191,14 +238,10 @@ void DomTree::print_outer_html(string &xpath) const {
 }
 
 void DomTree::print_text(string &xpath) const {
-    if (xpath[0] == '/') {
-        xpath.erase(0, 1);
-    }
-    if (!current_xpath.empty()) {
-        xpath = current_xpath + xpath;
-    }
-    if (xpath.empty()) {
-        xpath = "html";
+    try {
+        xpath = get_real_xpath(xpath);
+    } catch (runtime_error &) {
+        return;
     }
     regex pattern("/");
     sregex_token_iterator begin(xpath.begin(), xpath.end(), pattern, -1), end;
@@ -232,10 +275,9 @@ void DomTree::print_text(string &xpath) const {
 }
 
 void DomTree::cd(std::string &xpath) {
-    if (xpath[0] == '/') {
-        xpath.erase(0, 1);
-    }
-    if (xpath.empty()) {
+    try {
+        xpath = get_real_xpath(xpath);
+    } catch (runtime_error &) {
         return;
     }
     regex pattern("/");
@@ -262,11 +304,42 @@ void DomTree::cd(std::string &xpath) {
             return;
         }
     }
-    for (const auto &i: path_layer) {
-        current_xpath += i + '/';
+    if (!q.empty()) {
+        current_xpath.clear();
+        for (const auto &i: path_layer) {
+            current_xpath += i + '/';
+        }
     }
 }
 
 void DomTree::ls() const {
-
+    regex pattern("/");
+    sregex_token_iterator begin(current_xpath.begin(), current_xpath.end(), pattern, -1), end;
+    vector<string> path_layer = {begin, end};
+    Node *p = root;
+    queue<Node *> q;
+    q.push(p);
+    for (const auto &i: path_layer) {
+        size_t n = q.size();
+        for (int j = 0; j < n; ++j) {
+            p = q.front()->child;
+            q.pop();
+            while (p != nullptr) {
+                if (p->type == i) {
+                    q.push(p);
+                }
+                p = p->brother;
+            }
+        }
+    }
+    while (!q.empty()) {
+        p = q.front();
+        Node *c = p->child;
+        while (c != nullptr) {
+            cout << c->type << ' ';
+            c = c->brother;
+        }
+        q.pop();
+    }
+    cout << endl;
 }
