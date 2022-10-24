@@ -25,11 +25,16 @@ public:
 
     void print_text(std::string &xpath) const;
 
+    void cd(std::string &xpath);
+
+    void ls() const;
+
 private:
     Node *root;
     std::string content;
     bool is_legal;
     std::string error_message;
+    std::string current_xpath;
 };
 
 

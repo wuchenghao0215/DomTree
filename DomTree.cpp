@@ -153,6 +153,9 @@ void DomTree::print_outer_html(string &xpath) const {
     if (xpath[0] == '/') {
         xpath.erase(0, 1);
     }
+    if (!current_xpath.empty()) {
+        xpath = current_xpath + '/' + xpath;
+    }
     if (xpath.empty()) {
         xpath = "html";
     }
@@ -176,6 +179,7 @@ void DomTree::print_outer_html(string &xpath) const {
         }
         if (q.empty()) {
             cout << "xpath does not exist" << endl;
+            cout << xpath << endl;
             break;
         }
     }
@@ -190,6 +194,9 @@ void DomTree::print_text(string &xpath) const {
     if (xpath[0] == '/') {
         xpath.erase(0, 1);
     }
+    if (!current_xpath.empty()) {
+        xpath = current_xpath + xpath;
+    }
     if (xpath.empty()) {
         xpath = "html";
     }
@@ -213,6 +220,7 @@ void DomTree::print_text(string &xpath) const {
         }
         if (q.empty()) {
             cout << "xpath does not exist" << endl;
+            cout << xpath << endl;
             break;
         }
     }
@@ -221,4 +229,44 @@ void DomTree::print_text(string &xpath) const {
         p->print_text();
         q.pop();
     }
+}
+
+void DomTree::cd(std::string &xpath) {
+    if (xpath[0] == '/') {
+        xpath.erase(0, 1);
+    }
+    if (xpath.empty()) {
+        return;
+    }
+    regex pattern("/");
+    sregex_token_iterator begin(xpath.begin(), xpath.end(), pattern, -1), end;
+    vector<string> path_layer = {begin, end};
+    Node *p = root;
+    queue<Node *> q;
+    q.push(p);
+    for (const auto &i: path_layer) {
+        size_t n = q.size();
+        for (int j = 0; j < n; ++j) {
+            p = q.front()->child;
+            q.pop();
+            while (p != nullptr) {
+                if (p->type == i) {
+                    q.push(p);
+                }
+                p = p->brother;
+            }
+        }
+        if (q.empty()) {
+            cout << "xpath does not exist" << endl;
+            cout << xpath << endl;
+            return;
+        }
+    }
+    for (const auto &i: path_layer) {
+        current_xpath += i + '/';
+    }
+}
+
+void DomTree::ls() const {
+
 }
