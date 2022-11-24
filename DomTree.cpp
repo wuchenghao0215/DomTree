@@ -19,9 +19,16 @@ DomTree::DomTree(string c) : root(new Node), content(std::move(c)), is_legal(fal
     set<string> unclosed_tag = {"br", "hr", "base", "meta", "img", "input", "link"};
     stack<Node *> nodes;
     string tag, element, type;
-    bool is_tag;
+    bool is_tag, is_comment;
     for (char i: content) {
-        if (i == '<') {
+        if (is_comment) {
+            tag.push_back(i);
+            if (tag.substr(tag.length() - 3, tag.length()) == "-->") {
+                is_comment = false;
+                tag.clear();
+                is_tag = false;
+            }
+        } else if (i == '<') {
             is_tag = true;
             if (!element.empty()) {
                 size_t n = element.find_last_not_of(" \n\r\t");
@@ -117,6 +124,9 @@ DomTree::DomTree(string c) : root(new Node), content(std::move(c)), is_legal(fal
             tag.clear();
         } else if (is_tag) {
             tag.push_back(i);
+            if (tag == "!--") {
+                is_comment = true;
+            }
         } else {
             element.push_back(i);
         }
